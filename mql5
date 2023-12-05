@@ -1,0 +1,94 @@
+
+//+------------------------------------------------------------------+
+//|                                             BreakOut Grid.mq5    |
+//|                             Copyright © 2021, Forex Robot Easy Team |
+//|                                                                  |
+//|                        https://www.forexroboteasy.com                 |
+//+------------------------------------------------------------------+
+
+//+------------------------------------------------------------------+
+//|                            Global Variables                       |
+//+------------------------------------------------------------------+
+// Grid parameters
+input int GridSpacing = 500;         // Spacing between each pending order
+input int ScalpTarget = 100;         // Scalp target for each pending order
+
+// Entry modes
+input bool EntryByLevel = true;      // Enable entry by level mode
+input bool EntryByTime = true;       // Enable entry by time mode
+input bool ContinuousOperation = true;  // Enable continuous operation mode
+
+// Entry by level parameters
+input double TradeLevel = 1.2000;    // Important trade level
+input double LevelTolerance = 0.001; // Tolerance level for triggering the operation
+
+// Entry by time parameters
+input int TradeHour = 0;             // Hour for software launch
+input int TradeMinute = 0;           // Minute for software launch
+
+// Magic number
+input int MagicNumber = 123456;      // Unique identifier for the trading robot
+
+//+------------------------------------------------------------------+
+//|                        Expert Advisor Start Function              |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   if (EntryByLevel)
+   {
+      // Check if price approaches the trade level
+      if (MathAbs(SymbolInfoDouble(_Symbol, SYMBOL_BID) - TradeLevel) <= LevelTolerance)
+      {
+         // Place pending orders
+         PlacePendingOrders();
+      }
+   }
+   
+   if (EntryByTime)
+   {
+      // Check if current time matches the specified launch time
+      if (TimeHour(TimeCurrent()) == TradeHour && TimeMinute(TimeCurrent()) == TradeMinute)
+      {
+         // Place pending orders
+         PlacePendingOrders();
+      }
+   }
+   
+   if (ContinuousOperation)
+   {
+      // Start the software immediately
+      PlacePendingOrders();
+   }
+}
+
+//+------------------------------------------------------------------+
+//|                       Place Pending Orders Function               |
+//+------------------------------------------------------------------+
+void PlacePendingOrders()
+{
+   double price = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   
+   for (int i = 1; i <= 5; i++)
+   {
+      // Place pending order for long position
+      double longPrice = price - i * GridSpacing;
+      OrderSend(_Symbol, OP_BUYSTOP, 0.01, longPrice, 10, 0, 0, 'BreakOut Grid', MagicNumber, 0, clrNONE);
+      
+      // Place pending order for short position
+      double shortPrice = price + i * GridSpacing;
+      OrderSend(_Symbol, OP_SELLSTOP, 0.01, shortPrice, 10, 0, 0, 'BreakOut Grid', MagicNumber, 0, clrNONE);
+   }
+}
+
+//+------------------------------------------------------------------+
+//|                         Expert Advisor Deinit                     |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+   // Check if all orders are closed
+   if (OrdersTotal() == 0)
+   {
+      // Restart the software
+      PlacePendingOrders();
+   }
+}
